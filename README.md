@@ -1,2 +1,3 @@
 # ocp-cert-verifier
-Check expiration of certificates in Secret objects in an OCP project
+
+Verify expiration of certificates in Secret objects in an OCP project

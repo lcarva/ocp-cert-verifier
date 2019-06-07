@@ -1,13 +1,9 @@
-#!/bin/env python3
-
-from argparse import ArgumentParser
 from base64 import b64decode
 from collections import namedtuple
 from datetime import datetime, timedelta
 
 from kubernetes import config
 from openshift.dynamic import DynamicClient
-from openshift.dynamic.exceptions import ForbiddenError
 from OpenSSL import crypto
 
 
@@ -18,11 +14,13 @@ CERT_END_TOKEN = '-----END CERTIFICATE-----'
 Certificate = namedtuple('Certificate', 'name,expires_soon,expiration,expiration_relative')
 
 
-def check(namespace, grace_period):
+def verify(namespace, grace_period):
     secrets = get_ocp_secrets(namespace)
 
+    certs = []
     for secret_name, key, value in list_certs(secrets):
         cert = process_cert_text(f'{namespace}:{secret_name}:{key}', value, grace_period)
+        certs.append(cert)
 
         level = 'OK'
         if cert.expires_soon:
@@ -30,6 +28,7 @@ def check(namespace, grace_period):
 
         print('%s: %s expires in %s days on: %s' %
               (level, cert.name, cert.expiration_relative.days, cert.expiration))
+    return certs
 
 
 def get_ocp_secrets(namespace):
@@ -78,16 +77,3 @@ def process_cert_text(name, text, grace_period):
     expires_in = expiration - now
     expires_soon = expires_in < timedelta(days=grace_period)
     return Certificate(name, expires_soon, expiration, expires_in)
-
-
-if __name__ == '__main__':
-    parser = ArgumentParser(description='Check expiration of certificates in OCP secrets')
-    parser.add_argument('namespace',
-                        help='OCP namesapce, aka project, to check')
-    parser.add_argument('--grace-period', type=int, default=30,
-                        help='Warn if certificate expires in less than grace period, in days')
-    args = parser.parse_args()
-    try:
-        check(args.namespace, args.grace_period)
-    except ForbiddenError:
-        print('ERROR: Unable to access project {}'.format(args.namespace))
