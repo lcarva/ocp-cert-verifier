@@ -1,3 +1,5 @@
+![Travis CI](https://api.travis-ci.org/lcarva/ocp-cert-verifier.svg?branch=master)
+
 # ocp-cert-verifier
 
 Verify expiration of certificates in Secret objects in an OCP project
