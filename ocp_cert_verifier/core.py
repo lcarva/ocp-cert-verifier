@@ -1,10 +1,17 @@
 from base64 import b64decode
 from collections import namedtuple
 from datetime import datetime, timedelta
+import logging
 
 from kubernetes import config
 from openshift.dynamic import DynamicClient
 from OpenSSL import crypto
+
+from .notify import send_email_from_stream
+from .utils import setup_string_logger_and_reset, validate_smtp_info
+
+
+LOGGER = logging.getLogger('ocp_cert_verifier')
 
 
 CERT_START_TOKEN = '-----BEGIN CERTIFICATE-----'
@@ -14,20 +21,26 @@ CERT_END_TOKEN = '-----END CERTIFICATE-----'
 Certificate = namedtuple('Certificate', 'name,expires_soon,expiration,expiration_relative')
 
 
-def verify(namespace, grace_period):
+def verify(namespace, grace_period, smtp_info):
+    validate_smtp_info(smtp_info)
     secrets = get_ocp_secrets(namespace)
+    stream = setup_string_logger_and_reset()
 
+    should_notify = False
     certs = []
     for secret_name, key, value in list_certs(secrets):
         cert = process_cert_text(f'{namespace}:{secret_name}:{key}', value, grace_period)
         certs.append(cert)
 
-        level = 'OK'
+        level = logging.INFO
         if cert.expires_soon:
-            level = 'WARNING'
+            level = logging.WARNING
+            should_notify = True
 
-        print('%s: %s expires in %s days on: %s' %
-              (level, cert.name, cert.expiration_relative.days, cert.expiration))
+        LOGGER.log(level, '%s expires in %d days on: %s',
+                   cert.name, cert.expiration_relative.days, cert.expiration)
+    if should_notify:
+        send_email_from_stream(namespace, stream, smtp_info)
     return certs
 
 

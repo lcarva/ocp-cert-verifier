@@ -4,6 +4,10 @@ import sys
 from openshift.dynamic.exceptions import ForbiddenError
 
 from . import verify
+from .utils import setup_app_logger
+
+
+LOGGER = setup_app_logger()
 
 
 def main(args=None):
@@ -13,11 +17,24 @@ def main(args=None):
                         help='OCP namesapce, aka project, to verify')
     parser.add_argument('--grace-period', type=int, default=30,
                         help='Warn if certificate expires in less than grace period, in days')
+
+    parser.add_argument('--email-to',
+                        help='Send email notification on warnings to given address')
+    parser.add_argument('--smtp-server',
+                        help='The SMTP server to be used for email notifications')
+    parser.add_argument('--email-from',
+                        help='Email sender address')
+
     args = parser.parse_args(args)
+    smtp_info = {
+        'server': args.smtp_server,
+        'to': args.email_to,
+        'from': args.email_from,
+    }
     try:
-        verify(args.namespace, args.grace_period)
+        verify(args.namespace, args.grace_period, smtp_info)
     except ForbiddenError:
-        print('ERROR: Unable to access project {}'.format(args.namespace))
+        LOGGER.error('Unable to access project %s', args.namespace)
 
 
 if __name__ == '__main__':
