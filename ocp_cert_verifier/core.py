@@ -3,7 +3,7 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 import logging
 
-from kubernetes import config
+from kubernetes import config, client
 from openshift.dynamic import DynamicClient
 from OpenSSL import crypto
 
@@ -21,9 +21,9 @@ CERT_END_TOKEN = '-----END CERTIFICATE-----'
 Certificate = namedtuple('Certificate', 'name,expires_soon,expiration,expiration_relative')
 
 
-def verify(namespace, grace_period, smtp_info=None):
+def verify(namespace, grace_period, in_cluster=False, smtp_info=None):
     validate_smtp_info(smtp_info)
-    secrets = get_ocp_secrets(namespace)
+    secrets = get_ocp_secrets(namespace, in_cluster)
     stream = setup_string_logger_and_reset()
 
     should_notify = False
@@ -44,10 +44,14 @@ def verify(namespace, grace_period, smtp_info=None):
     return certs
 
 
-def get_ocp_secrets(namespace):
-    k8s_client = config.new_client_from_config()
-    dyn_client = DynamicClient(k8s_client)
-    v1_secrets = dyn_client.resources.get(api_version='v1', kind='Secret')
+def get_ocp_secrets(namespace, in_cluster):
+    if in_cluster:
+        config.load_incluster_config()
+        k8s_client = client.ApiClient()
+    else:
+        k8s_client = config.new_client_from_config()
+    _client = DynamicClient(k8s_client)
+    v1_secrets = _client.resources.get(api_version='v1', kind='Secret')
     return v1_secrets.get(namespace=namespace).items
 
 

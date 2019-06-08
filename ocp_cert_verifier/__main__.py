@@ -18,6 +18,9 @@ def main(args=None):
     parser.add_argument('--grace-period', type=int, default=30,
                         help='Warn if certificate expires in less than grace period, in days')
 
+    parser.add_argument('--in-cluster', action='store_true', default=False,
+                        help='Running in a pod in an OCP cluster?')
+
     parser.add_argument('--email-to',
                         help='Send email notification on warnings to given address')
     parser.add_argument('--smtp-server',
@@ -32,7 +35,7 @@ def main(args=None):
         'from': args.email_from,
     }
     try:
-        verify(args.namespace, args.grace_period, smtp_info)
+        verify(args.namespace, args.grace_period, args.in_cluster, smtp_info)
     except ForbiddenError:
         LOGGER.error('Unable to access project %s', args.namespace)
 
