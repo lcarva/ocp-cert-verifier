@@ -21,7 +21,7 @@ CERT_END_TOKEN = '-----END CERTIFICATE-----'
 Certificate = namedtuple('Certificate', 'name,expires_soon,expiration,expiration_relative')
 
 
-def verify(namespace, grace_period, smtp_info):
+def verify(namespace, grace_period, smtp_info=None):
     validate_smtp_info(smtp_info)
     secrets = get_ocp_secrets(namespace)
     stream = setup_string_logger_and_reset()

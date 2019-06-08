@@ -3,6 +3,9 @@ from email.mime.text import MIMEText
 
 
 def send_email(namespace, text, smtp_info):
+    if not smtp_info or not smtp_info.get('server'):
+        return
+
     msg = MIMEText(text)
     msg['Subject'] = f'Certificate expiration warning for {namespace}'
     msg['From'] = smtp_info['from']

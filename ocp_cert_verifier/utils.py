@@ -45,4 +45,6 @@ def setup_string_logger_and_reset():
 
 
 def validate_smtp_info(smtp_info):
+    if not smtp_info:
+        return
     assert bool(smtp_info['server']) == bool(smtp_info['to']) == bool(smtp_info['from'])
