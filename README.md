@@ -1,3 +1,7 @@
+# DEPRECATED
+
+This project is deprecated and will no longer receive updates.
+
 ![Travis CI](https://api.travis-ci.org/lcarva/ocp-cert-verifier.svg?branch=master)
 
 ![Container build](https://quay.io/repository/factory2/ocp-cert-verifier/status)
